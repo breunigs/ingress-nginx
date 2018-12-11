@@ -49,6 +49,4 @@ RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
 USER www-data
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-
 CMD ["/nginx-ingress-controller"]
