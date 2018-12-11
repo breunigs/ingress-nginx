@@ -316,12 +316,13 @@ func (f *Framework) UpdateNginxConfigMapData(key string, value string) {
 }
 
 // DeleteNGINXPod deletes the currently running pod. It waits for the replacement pod to be up.
-func (f *Framework) DeleteNGINXPod() {
+// Grace period to wait for pod shutdown is in seconds.
+func (f *Framework) DeleteNGINXPod(grace int64) {
 	ns := f.IngressController.Namespace
 	pod, err := getIngressNGINXPod(ns, f.KubeClientSet)
 	Expect(err).NotTo(HaveOccurred(), "expected ingress nginx pod to be running")
 
-	err = f.KubeClientSet.CoreV1().Pods(ns).Delete(pod.GetName(), &metav1.DeleteOptions{})
+	err = f.KubeClientSet.CoreV1().Pods(ns).Delete(pod.GetName(), metav1.NewDeleteOptions(grace))
 	Expect(err).NotTo(HaveOccurred(), "unexpected error deleting ingress nginx pod")
 
 	err = wait.Poll(Poll, time.Minute*5, func() (bool, error) {

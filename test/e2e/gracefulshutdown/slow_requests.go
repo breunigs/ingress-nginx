@@ -17,7 +17,6 @@ limitations under the License.
 package gracefulshutdown
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -33,18 +32,16 @@ var _ = framework.IngressNginxDescribe("Graceful Shutdown - Slow Requests", func
 
 	BeforeEach(func() {
 		f.NewSlowEchoDeployment()
-	})
-
-	AfterEach(func() {
+		f.UpdateNginxConfigMapData("worker-shutdown-timeout", "50s")
 	})
 
 	It("should let slow requests finish before shutting down", func() {
 		host := "graceful-shutdown"
 
 		f.EnsureIngress(framework.NewSingleIngress(host, "/", host, f.IngressController.Namespace, "slowecho", 8080, nil))
-		f.WaitForNginxServer(host,
-			func(server string) bool {
-				return strings.Contains(server, fmt.Sprintf("server_name %s ;", host))
+		f.WaitForNginxConfiguration(
+			func(conf string) bool {
+				return strings.Contains(conf, "worker_shutdown_timeout")
 			})
 
 		done := make(chan bool)
@@ -59,8 +56,8 @@ var _ = framework.IngressNginxDescribe("Graceful Shutdown - Slow Requests", func
 			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
 		}()
 
-		time.Sleep(250 * time.Millisecond)
-		f.DeleteNGINXPod()
+		time.Sleep(1 * time.Second)
+		f.DeleteNGINXPod(60)
 		<-done
 	})
 })
