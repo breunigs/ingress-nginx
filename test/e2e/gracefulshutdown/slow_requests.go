@@ -51,19 +51,16 @@ var _ = framework.IngressNginxDescribe("Graceful Shutdown - Slow Requests", func
 		go func() {
 			defer func() { done <- true }()
 			defer GinkgoRecover()
-			framework.Logf("MAKING SLOW REQUEST")
 			resp, _, errs := gorequest.New().
 				Get(f.IngressController.HTTPURL+"/sleep/30").
 				Set("Host", host).
 				End()
-			framework.Logf("   finished slow request")
 			Expect(errs).To(BeNil())
 			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
 		}()
 
 		time.Sleep(250 * time.Millisecond)
 		f.DeleteNGINXPod()
-		framework.Logf("pod deleted (should happen before finished slow reqs)")
 		<-done
 	})
 })

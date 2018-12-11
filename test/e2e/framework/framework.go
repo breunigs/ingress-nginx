@@ -317,15 +317,12 @@ func (f *Framework) UpdateNginxConfigMapData(key string, value string) {
 
 // DeleteNGINXPod deletes the currently running pod. It waits for the replacement pod to be up.
 func (f *Framework) DeleteNGINXPod() {
-	Logf("Starting to delete NGINX pod")
 	ns := f.IngressController.Namespace
 	pod, err := getIngressNGINXPod(ns, f.KubeClientSet)
 	Expect(err).NotTo(HaveOccurred(), "expected ingress nginx pod to be running")
 
-	Logf("REALLY DELETING NOW NGINX pod")
 	err = f.KubeClientSet.CoreV1().Pods(ns).Delete(pod.GetName(), &metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred(), "unexpected error deleting ingress nginx pod")
-	Logf("DONE DELEETING")
 
 	err = wait.Poll(Poll, time.Minute*5, func() (bool, error) {
 		pod, err := getIngressNGINXPod(ns, f.KubeClientSet)
@@ -335,7 +332,6 @@ func (f *Framework) DeleteNGINXPod() {
 		return pod.GetName() != "", nil
 	})
 	Expect(err).NotTo(HaveOccurred(), "unexpected error while waiting for ingress nginx pod to come up again")
-	Logf("pod restarted yay")
 }
 
 // UpdateDeployment runs the given updateFunc on the deployment and waits for it to be updated
