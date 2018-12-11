@@ -41,7 +41,7 @@ var _ = framework.IngressNginxDescribe("Graceful Shutdown - Slow Requests", func
 	It("should let slow requests finish before shutting down", func() {
 		host := "graceful-shutdown"
 
-		f.EnsureIngress(framework.NewSingleIngress(host, "/", host, f.IngressController.Namespace, "http-svc", 80, nil))
+		f.EnsureIngress(framework.NewSingleIngress(host, "/", host, f.IngressController.Namespace, "slowecho", 8080, nil))
 		f.WaitForNginxServer(host,
 			func(server string) bool {
 				return strings.Contains(server, fmt.Sprintf("server_name %s ;", host))
@@ -49,16 +49,16 @@ var _ = framework.IngressNginxDescribe("Graceful Shutdown - Slow Requests", func
 
 		done := make(chan bool)
 		go func() {
+			defer func() { done <- true }()
 			defer GinkgoRecover()
 			framework.Logf("MAKING SLOW REQUEST")
 			resp, _, errs := gorequest.New().
-				Get(f.IngressController.HTTPURL).
+				Get(f.IngressController.HTTPURL+"/sleep/30").
 				Set("Host", host).
 				End()
 			framework.Logf("   finished slow request")
 			Expect(errs).To(BeNil())
 			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			done <- true
 		}()
 
 		time.Sleep(250 * time.Millisecond)
